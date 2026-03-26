@@ -26,7 +26,7 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
         <div className="flex items-center justify-between">
 
-          {/* Logo */}
+          {/*logo on the top left of the navbar*/}
           <Link to="/" onClick={closeMenu} className="flex items-center gap-2 group">
             <motion.div
               whileHover={{ rotate: 180 }}
@@ -39,7 +39,7 @@ export function Navbar() {
             <span className="text-2xl font-bold text-foreground">Nodify</span>
           </Link>
 
-          {/* Desktop Links */}
+          {/*link (directs the users to other pages)*/}
           <div className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
               <Link key={link.to} to={link.to} className="relative group">
@@ -62,7 +62,7 @@ export function Navbar() {
               </Link>
             ))}
 
-            {/* CTA */}
+            {/*call to action button*/}
             <Link to="/build">
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -78,7 +78,7 @@ export function Navbar() {
             </Link>
           </div>
 
-          {/* Hamburger Button */}
+          {/*menu with 3 frikin horizontal lines*/}
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => setMenuOpen((prev) => !prev)}
@@ -89,7 +89,7 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Dropdown — removed backdrop-blur */}
+      {/*mobile dropdown function*/}
       <AnimatePresence>
         {menuOpen && (
           <motion.div

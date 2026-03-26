@@ -11,20 +11,20 @@ function TypewriterText({ text }: { text: string }) {
     let timeout: number;
 
     if (!isDeleting && displayed.length < text.length) {
-      // typing
+      //typing animation for the build text 
       timeout = setTimeout(() => {
         setDisplayed(text.slice(0, displayed.length + 1));
       }, 200);
     } else if (!isDeleting && displayed.length === text.length) {
-      // pause before deleting
+      // pause animation
       timeout = setTimeout(() => setIsDeleting(true), 1500);
     } else if (isDeleting && displayed.length > 0) {
-      // deleting
+      // delete the build text
       timeout = setTimeout(() => {
         setDisplayed(text.slice(0, displayed.length - 1));
       }, 25);
     } else if (isDeleting && displayed.length === 0) {
-      // restart (avoid sync state update inside effect)
+      // restart
       timeout = setTimeout(() => setIsDeleting(false), 0);
     }
 
@@ -37,7 +37,7 @@ function TypewriterText({ text }: { text: string }) {
 export function Home() {
   return (
     <div className="pt-20 overflow-hidden">
-      {/* Floating background elements — blur reduced, no infinite motion */}
+      {/*glowy stuff (one on top left, one in the middle, and one on bottom right)*/}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute top-20 left-10 w-64 h-64 rounded-full blur-xl"
@@ -62,11 +62,11 @@ export function Home() {
         />
       </div>
 
-      {/* Hero Section */}
+      {/*hero section*/}
       <section className="min-h-screen flex items-center relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-20 w-full">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-center">
-            {/* Left Side */}
+            {/*left side of the hero section*/}
             <div className="relative z-10">
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -145,7 +145,7 @@ export function Home() {
               </motion.div>
             </div>
 
-            {/* Right Side Illustration */}
+            {/*right side, the illustration container*/}
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -158,7 +158,7 @@ export function Home() {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/*features section*/}
       <section className="py-20 sm:py-32 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div
@@ -206,11 +206,8 @@ export function Home() {
         </div>
       </section>
 
-      {/* How It Works Section */}
+      {/*how it works section*/}
       <section className="py-20 sm:py-32 bg-[#2B1915]/5 relative overflow-hidden">
-        {/* Static orb — removed infinite rotation */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#707F9E]/10 to-transparent rounded-full blur-xl" />
-
         <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -227,7 +224,7 @@ export function Home() {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 relative">
-            {/* Connection lines */}
+            {/*connection lines*/}
             <div className="hidden md:block absolute top-1/3 left-1/4 right-1/4 h-0.5">
               <motion.div
                 initial={{ scaleX: 0 }}
@@ -263,7 +260,7 @@ export function Home() {
         </div>
       </section>
 
-      {/* Why It Matters Section */}
+      {/*why it matters section*/}
       <section className="py-20 sm:py-32 relative">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <motion.div
@@ -273,7 +270,7 @@ export function Home() {
             transition={{ duration: 0.6 }}
             className="bg-[#6E341E] rounded-3xl p-6 sm:p-8 md:p-12 text-center text-[#FAF6F2] shadow-xl relative overflow-hidden"
           >
-            {/* Static decorative orbs — removed infinite scale/rotate */}
+            {/*orbs on top right and bottom left of the container*/}
             <div className="absolute -top-20 -right-20 w-64 h-64 bg-[#E6A97A]/10 rounded-full blur-xl" />
             <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-[#D291BC]/10 rounded-full blur-xl" />
 
@@ -304,7 +301,7 @@ export function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/*call to action section*/}
       <section className="py-20 sm:py-32 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-[#2B1915]/5 via-transparent to-[#5FAF7A]/5" />
 
@@ -314,7 +311,7 @@ export function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            {/* Static rocket — removed infinite wobble */}
+            {/*rocket icon*/}
             <div className="inline-block mb-6">
               <Rocket className="w-12 h-12 sm:w-16 sm:h-16 text-[#E6A97A]" />
             </div>
@@ -415,7 +412,7 @@ function StepCard({ number, title, description, icon, delay }: {
   );
 }
 
-// Pure CSS keyframe animations — zero JS/Framer overhead on the GPU-intensive paths
+//css animations for the system illustration
 const illustrationStyles = `
   @keyframes floatNode {
     0%, 100% { transform: translateY(0px); }
@@ -465,7 +462,7 @@ function SystemIllustration() {
             </radialGradient>
           </defs>
 
-          {/* CSS-animated paths — no Framer Motion, no feGaussianBlur filter */}
+          {/*css animation paths*/}
           <path className="path-1" d="M 100 80 Q 150 80 200 160" stroke="url(#grad1)" strokeWidth="3" fill="none" />
           <path className="path-2" d="M 300 80 Q 250 80 200 160" stroke="url(#grad1)" strokeWidth="3" fill="none" />
           <path className="path-3" d="M 200 160 L 200 240" stroke="url(#grad2)" strokeWidth="3" fill="none" />

@@ -14,10 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MonitorSmartphone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MobileBlocker — now only blocks small phones (< 480px width)
-// Tablets and laptops are allowed through
-// ─────────────────────────────────────────────────────────────────────────────
+{/*small mobile blocker and landscape forcer on bigger devices*/}
 
 export function MobileBlocker() {
   const [blockState, setBlockState] = useState<"none" | "phone" | "portrait">("none");
@@ -29,20 +26,18 @@ export function MobileBlocker() {
       const height = window.innerHeight;
       const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
  
-      // Block tiny phones outright (all orientation)
       if (width < 480) {
         setBlockState("phone");
         return;
       }
 
-      // Block small landscape-mode screens where the short side is less than 480
+      //block small touch devices that are likely phones, even if they are in landscape (some users might try to use nodify on a small phone in landscape, but the experience would be very cramped and not enjoyable)
       if (isTouchDevice && width > height && height < 480) {
         setBlockState("phone");
         return;
       }
 
-      // On touch devices (tablets/phones that passed the width check),
-      // force landscape — portrait means height > width
+      //devices that pass the width check but in portrait mode are directed to landscape mode
       if (isTouchDevice && height > width) {
         setBlockState("portrait");
         return;
@@ -53,7 +48,6 @@ export function MobileBlocker() {
  
     check();
     window.addEventListener("resize", check);
-    // orientationchange fires on iOS before resize sometimes
     window.addEventListener("orientationchange", () => setTimeout(check, 100));
     return () => {
       window.removeEventListener("resize", check);
@@ -83,7 +77,7 @@ export function MobileBlocker() {
           >
             {blockState === "portrait" ? (
               <>
-                {/* Animated rotate icon */}
+                {/*animated rotate icon*/}
                 <div className="flex items-center justify-center mb-6">
                   <motion.div
                     animate={{ rotate: [0, 90, 90, 0] }}
@@ -94,7 +88,7 @@ export function MobileBlocker() {
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}
                   >
-                    {/* Tablet silhouette SVG */}
+                    {/*silhouette*/}
                     <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
                       <rect x="6" y="3" width="20" height="26" rx="3" stroke="white" strokeWidth="2" fill="none"/>
                       <circle cx="16" cy="25" r="1.5" fill="white"/>
@@ -103,7 +97,7 @@ export function MobileBlocker() {
                   </motion.div>
                 </div>
  
-                {/* Rotating arrow arc */}
+                {/*rotating arrow*/}
                 <div className="flex items-center justify-center mb-5">
                   <motion.div
                     animate={{ rotate: [0, 360] }}
@@ -174,7 +168,7 @@ export function MobileBlocker() {
   );
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// node types 
 
 type NodeType = "input" | "process" | "output" | "energy" | "condition";
 
@@ -261,7 +255,7 @@ interface ValidationRules {
 
 type ValidationState = "incomplete" | "error" | "partial" | "success";
 
-// ─── Graph utility functions ─────────────────────────────────────────────────
+//graph utility functions
 
 function buildAdj(connections: Connection[]): Record<string, string[]> {
   const adj: Record<string, string[]> = {};
@@ -312,7 +306,7 @@ function hasCycleInGraph(nodes: PlacedNode[], connections: Connection[]): boolea
   return found;
 }
 
-// ─── Validators ───────────────────────────────────────────────────────────────
+//validators
 
 interface ValidatorResult {
   score: number;
@@ -324,13 +318,13 @@ function validateWaterCycle(placedNodes: PlacedNode[], connections: Connection[]
   const errors: string[] = [];
   const requiredNodeIds = ["water", "sunlight", "evaporation", "water-vapor", "condensation", "cloud", "rain"];
   const requiredEdges = [
-    { from: "water",        to: "evaporation",  label: "Connect water → evaporation" },
-    { from: "sunlight",     to: "evaporation",  label: "Connect sunlight → evaporation" },
-    { from: "evaporation",  to: "water-vapor",  label: "Connect evaporation → water vapor" },
-    { from: "water-vapor",  to: "condensation", label: "Connect water vapor → condensation" },
-    { from: "condensation", to: "cloud",         label: "Connect condensation → cloud" },
-    { from: "cloud",        to: "rain",          label: "Connect cloud → rain" },
-    { from: "rain",         to: "water",         label: "Connect rain → water" },
+    { from: "water", to: "evaporation", label: "Connect water → evaporation" },
+    { from: "sunlight", to: "evaporation", label: "Connect sunlight → evaporation" },
+    { from: "evaporation", to: "water-vapor", label: "Connect evaporation → water vapor" },
+    { from: "water-vapor", to: "condensation", label: "Connect water vapor → condensation" },
+    { from: "condensation", to: "cloud", label: "Connect condensation → cloud" },
+    { from: "cloud", to: "rain", label: "Connect cloud → rain" },
+    { from: "rain", to: "water", label: "Connect rain → water" },
   ];
   for (const nodeId of requiredNodeIds) {
     if (!getNode(placedNodes, nodeId)) { score -= 10; errors.push(`Add the missing node: ${nodeId.replace(/-/g, " ")}`); }
@@ -360,11 +354,11 @@ function validateClimateChange(placedNodes: PlacedNode[], connections: Connectio
   const errors: string[] = [];
   const requiredNodeIds = ["sunlight", "greenhouse-gases", "heat-trapping", "temperature-rise", "ice-melting", "rising-sea-level"];
   const requiredEdges = [
-    { from: "sunlight",         to: "heat-trapping",    label: "Connect sunlight → heat trapping" },
-    { from: "greenhouse-gases", to: "heat-trapping",    label: "Connect greenhouse gases → heat trapping" },
-    { from: "heat-trapping",    to: "temperature-rise", label: "Connect heat trapping → temperature rise" },
-    { from: "temperature-rise", to: "ice-melting",      label: "Connect temperature rise → ice melting" },
-    { from: "ice-melting",      to: "rising-sea-level", label: "Connect ice melting → rising sea level" },
+    { from: "sunlight", to: "heat-trapping", label: "Connect sunlight → heat trapping" },
+    { from: "greenhouse-gases", to: "heat-trapping", label: "Connect greenhouse gases → heat trapping" },
+    { from: "heat-trapping", to: "temperature-rise", label: "Connect heat trapping → temperature rise" },
+    { from: "temperature-rise", to: "ice-melting", label: "Connect temperature rise → ice melting" },
+    { from: "ice-melting", to: "rising-sea-level", label: "Connect ice melting → rising sea level" },
   ];
   for (const nodeId of requiredNodeIds) {
     if (!getNode(placedNodes, nodeId)) { score -= 10; errors.push(`Add the missing node: ${nodeId.replace(/-/g, " ")}`); }
@@ -399,11 +393,11 @@ function validateElectricCircuit(placedNodes: PlacedNode[], connections: Connect
   const errors: string[] = [];
   const requiredNodeIds = ["battery", "wire", "switch", "current-flow", "light-bulb"];
   const requiredEdges = [
-    { from: "battery",       to: "wire",          label: "Connect battery → wire" },
-    { from: "wire",          to: "switch",         label: "Connect wire → switch" },
-    { from: "switch",        to: "current-flow",   label: "Connect switch → current flow" },
-    { from: "current-flow",  to: "light-bulb",     label: "Connect current flow → light bulb" },
-    { from: "light-bulb",    to: "battery",        label: "Connect light bulb → battery" },
+    { from: "battery", to: "wire", label: "Connect battery → wire" },
+    { from: "wire", to: "switch", label: "Connect wire → switch" },
+    { from: "switch", to: "current-flow", label: "Connect switch → current flow" },
+    { from: "current-flow", to: "light-bulb", label: "Connect current flow → light bulb" },
+    { from: "light-bulb", to: "battery", label: "Connect light bulb → battery" },
   ];
   for (const nodeId of requiredNodeIds) {
     if (!getNode(placedNodes, nodeId)) { score -= 10; errors.push(`Add the missing node: ${nodeId.replace(/-/g, " ")}`); }
@@ -428,7 +422,7 @@ function validateElectricCircuit(placedNodes: PlacedNode[], connections: Connect
   return { score: Math.max(0, score), errors };
 }
 
-// ─── Score helpers ────────────────────────────────────────────────────────────
+//score
 
 export function accColor(a: number): string {
   if (a >= 95) return "#10b981";
@@ -468,7 +462,7 @@ function computeEfficiencyScore(nodes: PlacedNode[], connections: Connection[], 
   return Math.max(0, Math.min(100, base - unusedNodes * 8 - extraConns * 5));
 }
 
-// ─── Colour helpers ───────────────────────────────────────────────────────────
+//color mapping for gradients
 
 const COLORS: Record<string, string> = {
   "blue-400": "#60a5fa", "cyan-500": "#06b6d4", "amber-400": "#fbbf24", "orange-500": "#f97316",
@@ -497,9 +491,7 @@ function shuffleArray<T>(arr: T[]): T[] {
   return a;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CONCEPT DATA (unchanged)
-// ─────────────────────────────────────────────────────────────────────────────
+//concept definitions 
 
 const CONCEPTS: ConceptLevel[] = [
   {
@@ -510,10 +502,10 @@ const CONCEPTS: ConceptLevel[] = [
     goal: "Connect water through evaporation, condensation, clouds, and rain back to water",
     efficiencyConfig: { optimalNodes: 7, optimalConnections: 7, extraNodePenalty: 8, extraConnPenalty: 4, attemptPenalty: 5 },
     requiredNodeTypes: [
-      { type: "input",   label: "Input",        count: "≥ 1" },
-      { type: "energy",  label: "Energy Source", count: "= 1" },
-      { type: "process", label: "Process",       count: "≥ 4" },
-      { type: "output",  label: "Output",        count: "≥ 1" },
+      { type: "input", label: "Input", count: "≥ 1" },
+      { type: "energy", label: "Energy Source", count: "= 1" },
+      { type: "process", label: "Process", count: "≥ 4" },
+      { type: "output", label: "Output", count: "≥ 1" },
     ],
     components: [
       { id: "water",        name: "Water",        icon: Droplet,    type: "input",   gradient: "from-blue-400 to-cyan-500" },
@@ -613,7 +605,7 @@ const CONCEPTS: ConceptLevel[] = [
   },
 ];
 
-// ─── Review content ───────────────────────────────────────────────────────────
+//review content for each concept
 
 const reviewContent: Record<string, ReviewContent> = {
   "water-cycle": {
@@ -690,7 +682,7 @@ const reviewContent: Record<string, ReviewContent> = {
   },
 };
 
-// ─── Difficulty palette ───────────────────────────────────────────────────────
+//difficulty color palettes
 
 const difficultyStyle = {
   Easy: {
@@ -718,7 +710,7 @@ const difficultyStyle = {
 
 const NAVBAR_HEIGHT = 72;
 
-// ─── CSS ──────────────────────────────────────────────────────────────────────
+//some css
 
 const themeStyles = `
   .nodify-app {
@@ -830,7 +822,7 @@ const themeStyles = `
   .nodify-section-label { color: var(--muted-foreground); letter-spacing: 0.1em; font-size: 0.65rem; text-transform: uppercase; font-weight: 600; }
   .nodify-duplicate-warn { background-color: color-mix(in srgb, var(--warning) 12%, transparent); border: 1px solid color-mix(in srgb, var(--warning) 40%, transparent); border-radius: var(--radius); }
 
-  /* ── Touch drag preview ── */
+  /*touch drag preview*/
   .nodify-drag-preview {
     position: fixed;
     pointer-events: none;
@@ -840,13 +832,13 @@ const themeStyles = `
     transition: none;
   }
 
-  /* ── Touch-mode: tap to move indicator ── */
+  /*touch mode */
   .nodify-move-mode {
     border: 2px solid var(--primary) !important;
     box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 20%, transparent) !important;
   }
 
-  /* ── Tablet layout adjustments ── */
+  /*tablet layout*/
   @media (max-width: 1024px) {
     .nodify-sidebar-left {
       width: 14rem !important;
@@ -865,18 +857,11 @@ const themeStyles = `
     }
   }
 
-  /* Prevent text selection during drag on all interactive elements */
   .nodify-app * {
     -webkit-tap-highlight-color: transparent;
   }
 `;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Touch-aware DnD backend options
-// enableMouseEvents: true  → mouse still works on desktop/hybrid
-// enableKeyboardEvents: false → avoid accidental keyboard triggers
-// delayTouchStart: 50      → small delay to distinguish tap (connect) from drag
-// ─────────────────────────────────────────────────────────────────────────────
 const touchBackendOptions = {
   enableMouseEvents: true,      // keep mouse drag working on desktops
   enableKeyboardEvents: false,
@@ -884,9 +869,7 @@ const touchBackendOptions = {
   touchSlop: 8,                 // px movement before drag activates
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ScoreRing
-// ─────────────────────────────────────────────────────────────────────────────
+// score ring
 
 function ScoreRing({ accuracy }: { accuracy: number }) {
   const r = 28, circ = 2 * Math.PI * r;
@@ -908,9 +891,7 @@ function ScoreRing({ accuracy }: { accuracy: number }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Root export
-// ─────────────────────────────────────────────────────────────────────────────
+// export main build page
 
 export function Build() {
   return (
@@ -926,7 +907,7 @@ export function Build() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BuildContent
+// system contents
 // ─────────────────────────────────────────────────────────────────────────────
 
 function BuildContent() {
@@ -951,7 +932,7 @@ function BuildContent() {
   >([]);
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
 
-  // ── Touch move-mode: tap a placed node to enter "move mode", then tap canvas to reposition ──
+  // ── move mode ──
   const [movingNodeId, setMovingNodeId] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -981,7 +962,7 @@ function BuildContent() {
     collect: monitor => ({ isOver: monitor.isOver() }),
   }), [addNode]);
 
-  // Also accept placed-node drops for repositioning via DnD
+  // placed node question
   const [, dropCanvas] = useDrop(() => ({
     accept: "placed-node",
     drop: (item: { nodeId: string }, monitor) => {
@@ -997,7 +978,7 @@ function BuildContent() {
     },
   }), []);
 
-  // Attach both drop refs to the canvas
+  // Attach drop to canvas
   useEffect(() => {
     if (canvasRef.current && viewMode === "canvas") {
       drop(canvasRef);
@@ -1005,10 +986,10 @@ function BuildContent() {
     }
   }, [drop, dropCanvas, viewMode]);
 
-  // ── Canvas tap handler — moves node in move-mode, or clears selection ──
+  // ── Canvas tap handler — 
   const handleCanvasTap = (e: React.MouseEvent | React.TouchEvent) => {
     if (movingNodeId) {
-      // Place the moving node at the tapped position
+      // Place move node
       let clientX: number, clientY: number;
       if ("touches" in e) {
         const touch = (e as React.TouchEvent).changedTouches[0];
@@ -1035,16 +1016,16 @@ function BuildContent() {
   const handleNodeClick = (nodeId: string, e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
 
-    // If this node is already in move-mode, cancel move-mode
+    // If already in move-mode, then cancel move-mode
     if (movingNodeId === nodeId) {
       setMovingNodeId(null);
       return;
     }
 
-    // If another node is in move-mode, ignore node taps (let canvas tap handle placement)
+    // If in move-mode, ignore node taps 
     if (movingNodeId) return;
 
-    // Normal connect logic
+    // connect logic
     if (selectedNode === null) {
       setSelectedNode(nodeId);
     } else if (selectedNode === nodeId) {
@@ -1063,7 +1044,7 @@ function BuildContent() {
     setConnections(prev => prev.filter(c => c.from !== nodeId && c.to !== nodeId));
   };
 
-  // ── Long-press to enter move-mode (touch UX) ──
+  // ──enter move-mode ──
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleNodeTouchStart = (nodeId: string) => {
@@ -1158,9 +1139,7 @@ function BuildContent() {
     return `M ${x1} ${y1} Q ${mx} ${my} ${x2} ${y2}`;
   };
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // SELECTOR
-  // ════════════════════════════════════════════════════════════════════════════
+  // level selector
   if (viewMode === "selector") {
     return (
       <div
@@ -1218,9 +1197,8 @@ function BuildContent() {
     );
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // REVIEW
-  // ════════════════════════════════════════════════════════════════════════════
+
+  // material review
   if (viewMode === "review" && selectedLevel) {
     const review = reviewContent[selectedLevel.id];
     const ds = difficultyStyle[selectedLevel.difficulty];
@@ -1314,9 +1292,7 @@ function BuildContent() {
   if (!selectedLevel) return null;
   const ds = difficultyStyle[selectedLevel.difficulty];
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // CANVAS
-  // ════════════════════════════════════════════════════════════════════════════
+  // canvas
   return (
     <div
       className="nodify-app flex flex-col overflow-hidden"
@@ -1324,7 +1300,7 @@ function BuildContent() {
     >
       <div className="flex flex-1 overflow-hidden">
 
-        {/* ── Left Sidebar ── */}
+        {/*component sidebar*/}
         <motion.div initial={{ x: -300 }} animate={{ x: 0 }} transition={{ duration: 0.4 }}
           className={`nodify-sidebar nodify-sidebar-left flex flex-col shadow-2xl ${ds.card}`}
           style={{ width: "18rem", flexShrink: 0, borderRight: "1px solid var(--sidebar-border)" }}>
@@ -1358,7 +1334,7 @@ function BuildContent() {
           </div>
         </motion.div>
 
-        {/* ── Center Canvas ── */}
+        {/*center canvas*/}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Toolbar */}
           <div className="nodify-toolbar px-6 py-4 flex items-center justify-between"
@@ -1520,7 +1496,7 @@ function BuildContent() {
           </div>
         </div>
 
-        {/* ── Right Panel ── */}
+        {/*Right Panel */}
         <motion.div initial={{ x: 300 }} animate={{ x: 0 }} transition={{ duration: 0.4 }}
           className="nodify-sidebar nodify-sidebar-right flex flex-col shadow-2xl"
           style={{ width: "20rem", flexShrink: 0, borderLeft: "1px solid var(--sidebar-border)" }}>
@@ -1531,7 +1507,7 @@ function BuildContent() {
 
           <div className="flex-1 overflow-y-auto p-5 space-y-5">
 
-            {/* Status card */}
+            {/* Status box*/}
             <motion.div
               animate={isRunning ? { scale: [1, 1.02, 1] } : {}}
               transition={{ duration: 0.5, repeat: isRunning ? Infinity : 0 }}
@@ -1717,9 +1693,7 @@ function BuildContent() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DraggableComponent — touch + mouse drag from sidebar
-// ─────────────────────────────────────────────────────────────────────────────
+// Draggable component 
 
 function DraggableComponent({ component }: { component: Component }) {
   const [{ isDragging }, drag] = useDrag(() => ({
@@ -1755,9 +1729,7 @@ function DraggableComponent({ component }: { component: Component }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PlacedNodeComponent — touch-aware
-// ─────────────────────────────────────────────────────────────────────────────
+// Placed Node Component 
 
 function PlacedNodeComponent({
   node, isSelected, isMoving, onTap, onDoubleClick, onTouchStart, onTouchEnd, systemStatus,
@@ -1774,7 +1746,7 @@ function PlacedNodeComponent({
   const Icon = node.component.icon;
   const [c1, c2] = gradientColors(node.component.gradient);
 
-  // DnD drag — still used for trash-zone deletion via drag
+  // DnD drag 
   const [{ isDragging }, drag] = useDrag(() => ({
     type: "placed-node",
     item: { nodeId: node.id },
@@ -1787,13 +1759,11 @@ function PlacedNodeComponent({
     onTouchEnd();
     const now = Date.now();
     if (now - lastTap.current < 300) {
-      // Double-tap
       e.preventDefault();
       onDoubleClick();
       lastTap.current = 0;
     } else {
       lastTap.current = now;
-      // Single tap handled by onClick
     }
   };
 
@@ -1860,9 +1830,7 @@ function PlacedNodeComponent({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TrashZone — accepts dragged placed-nodes for deletion
-// ─────────────────────────────────────────────────────────────────────────────
+// Trash
 
 function TrashZone({ onDelete }: { onDelete: (nodeId: string) => void }) {
   const [{ isOver, canDrop }, drop] = useDrop(() => ({

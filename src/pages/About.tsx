@@ -4,7 +4,6 @@ import { BookOpen, Lightbulb, Target, TrendingUp, Zap, Eye, Brain } from "lucide
 export function About() {
   return (
     <div className="pt-20 min-h-screen relative overflow-hidden">
-      {/* Animated background */}
       <div className="fixed inset-0 pointer-events-none">
         <motion.div
           animate={{
@@ -36,7 +35,7 @@ export function About() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-20 relative z-10">
 
-        {/* Header */}
+        {/*header container with twirling logo at the center i guess */}
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
@@ -65,7 +64,7 @@ export function About() {
           </p>
         </motion.div>
 
-        {/* Section 1 - Problem */}
+        {/*problem container*/}
         <BigSection
           icon={<BookOpen className="w-8 h-8 sm:w-16 sm:h-16" />}
           title="The Problem"
@@ -85,7 +84,7 @@ export function About() {
           </div>
         </BigSection>
 
-        {/* Section 2 - Solution */}
+        {/*solution container*/}
         <BigSection
           icon={<Lightbulb className="w-8 h-8 sm:w-16 sm:h-16" />}
           title="Our Solution"
@@ -116,7 +115,7 @@ export function About() {
           </div>
         </BigSection>
 
-        {/* Section 3 - Method */}
+        {/*method container*/}
         <BigSection
           icon={<Target className="w-8 h-8 sm:w-16 sm:h-16" />}
           title="Our Method"
@@ -146,7 +145,7 @@ export function About() {
           </div>
         </BigSection>
 
-        {/* Section 4 - Impact */}
+        {/*impact container with extra gradient*/}
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -156,19 +155,6 @@ export function About() {
         >
           <div className="relative overflow-hidden rounded-[2rem] sm:rounded-[3rem]">
             <div className="absolute inset-0 bg-gradient-to-br from-primary via-accent to-secondary" />
-
-            {/* Orbs */}
-            <motion.div
-              animate={{ scale: [1, 1.5, 1], x: [0, 100, 0], y: [0, -100, 0] }}
-              transition={{ duration: 20, repeat: Infinity }}
-              className="absolute top-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"
-            />
-            <motion.div
-              animate={{ scale: [1, 1.3, 1], x: [0, -100, 0], y: [0, 100, 0] }}
-              transition={{ duration: 25, repeat: Infinity }}
-              className="absolute bottom-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"
-            />
-
             <div className="relative z-10 p-6 sm:p-10 md:p-14 text-primary-foreground">
               <div className="flex items-center gap-3 sm:gap-4 mb-5 sm:mb-8">
                 <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 bg-white/20 backdrop-blur-sm rounded-2xl sm:rounded-3xl flex items-center justify-center flex-shrink-0">
@@ -229,10 +215,10 @@ function BigSection({
     >
       <div className="bg-gradient-to-br from-card via-popover to-card backdrop-blur-xl rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 md:p-16 shadow-2xl border border-border relative overflow-hidden">
 
-        {/* soft overlay */}
+        {/*soft overlay*/}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 pointer-events-none" />
 
-        {/* decorative corner */}
+        {/*left corner blob thingy*/}
         <div
           className={`absolute ${
             side === "left" ? "top-0 left-0 rounded-br-full" : "top-0 right-0 rounded-bl-full"

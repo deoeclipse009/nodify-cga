@@ -14,7 +14,7 @@ export function Contact() {
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
-  // Initialize EmailJS on component mount
+  {/*emailJS for the  contact form*/}
   useEffect(() => {
     const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || "suZ1E4Somq924V19T";
     console.log("Initializing EmailJS with public key:", publicKey);
@@ -64,9 +64,8 @@ export function Contact() {
       setFormData({ form_name: "", form_email: "", form_message: "" });
 
       setTimeout(() => setSubmitted(false), 3000);
-    } catch (err: unknown) {
-      console.error("EmailJS Error:", err);
-      const error = err as { text?: string; message?: string };
+    } catch (error: any) {
+      console.error("EmailJS Error:", error);
       const errorMessage = error?.text || error?.message || "Failed to send message. Please try again.";
       setError(errorMessage);
     } finally {
@@ -104,9 +103,9 @@ export function Contact() {
           className="absolute bottom-40 left-20 w-96 h-96 bg-gradient-to-br from-secondary/10 to-accent/10 rounded-full blur-3xl"
         />
       </div>
-
+      
+      {/*header with logo*/}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-16 sm:pt-12 md:pt-20 pb-12 sm:pb-20 relative z-10">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -135,7 +134,7 @@ export function Contact() {
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 sm:gap-8">
-          {/* Contact Form */}
+          {/*contact form*/}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
@@ -146,11 +145,11 @@ export function Contact() {
               onSubmit={handleSubmit}
               className="bg-card/80 backdrop-blur-xl rounded-3xl p-6 sm:p-10 shadow-2xl border border-border relative overflow-hidden"
             >
-              {/* Decorative gradient */}
+              {/*some gradient i guess*/}
               <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/10 to-transparent rounded-bl-full" />
 
               <div className="relative z-10 space-y-5 sm:space-y-6">
-                {/* NAME */}
+                {/*name*/}
                 <div>
                   <label className="block mb-2 sm:mb-3 text-foreground font-semibold flex items-center gap-2">
                     Name
@@ -177,7 +176,7 @@ export function Contact() {
                   />
                 </div>
 
-                {/* EMAIL */}
+                {/*email*/}
                 <div>
                   <label className="block mb-2 sm:mb-3 text-foreground font-semibold flex items-center gap-2">
                     Email
@@ -200,7 +199,7 @@ export function Contact() {
                   />
                 </div>
 
-                {/* MESSAGE */}
+                {/*message*/}
                 <div>
                   <label className="block mb-2 sm:mb-3 text-foreground font-semibold flex items-center gap-2">
                     Message
@@ -223,7 +222,7 @@ export function Contact() {
                   />
                 </div>
 
-                {/* BUTTON */}
+                {/*button*/}
                 <motion.button
                   type="submit"
                   disabled={loading}
@@ -238,7 +237,7 @@ export function Contact() {
                   <motion.div className="absolute inset-0 bg-gradient-to-r from-accent to-secondary opacity-0 group-hover:opacity-100 transition-opacity" />
                 </motion.button>
 
-                {/* ERROR */}
+                {/*error message - hope it doesnt pop up lmao*/}
                 <AnimatePresence>
                   {error && (
                     <motion.div
@@ -253,7 +252,7 @@ export function Contact() {
                   )}
                 </AnimatePresence>
 
-                {/* SUCCESS */}
+                {/*success message - plz always show dis*/}
                 <AnimatePresence>
                   {submitted && (
                     <motion.div
@@ -276,7 +275,7 @@ export function Contact() {
             </form>
           </motion.div>
 
-          {/* CONTACT INFO */}
+          {/*our instas*/}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
