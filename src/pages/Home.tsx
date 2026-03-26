@@ -174,7 +174,7 @@ export function Home() {
                 <span className="text-sm font-semibold text-[#E6A97A]">Powerful Features</span>
               </div>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold leading-tight bg-gradient-to-r from-[#FAF6F2] via-[#707F9E] to-[#E6A97A] bg-clip-text text-transparent mb-4">
+            <h2 className="p-2 text-3xl sm:text-4xl font-bold leading-tight bg-gradient-to-r from-[#FAF6F2] via-[#707F9E] to-[#E6A97A] bg-clip-text text-transparent mb-4">
               Learn by Building
             </h2>
             <p className="text-lg sm:text-xl text-[#D6CFC7]">Experience learning like never before</p>
@@ -294,7 +294,7 @@ export function Home() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.4 }}
-                  className="bg-[#5FAF7A]/20 rounded-2xl p-4 sm:p-6 border border-[#5FAF7A]/40"
+                  className="bg-[#E6A97A]/20 rounded-2xl p-4 sm:p-6 border border-[#E6A97A]/40"
                 >
                   Concept Builder: Understanding systems that last forever
                 </motion.div>

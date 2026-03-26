@@ -1,74 +1,34 @@
-# React + TypeScript + Vite
+# NODIFY
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Institusi
+SMA Regina Pacis Surakarta
 
-Currently, two official plugins are available:
+## Anggota Tim
+- Ketua: Jorge Amadeo Benavides  
+- Anggota 1: Carlos Keiran Indrawan  
+- Anggota 2: Gradey Kearn Phanjaya  
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Deskripsi Karya
+Di era digital, pembelajaran fisika sering dianggap sulit karena bersifat abstrak dan minim visualisasi. Hal ini membuat siswa kesulitan memahami konsep serta menurunkan minat belajar.
 
-## React Compiler
+Untuk mengatasi hal tersebut, kami mengembangkan NODIFY, platform pembelajaran interaktif berbasis web yang mengubah cara belajar dari menghafal menjadi memahami melalui eksplorasi.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+NODIFY menghadirkan simulasi dinamis dan visualisasi real-time, sehingga siswa dapat melihat langsung bagaimana konsep fisika bekerja.
 
-## Expanding the ESLint configuration
+TUJUAN
+- Meningkatkan pemahaman melalui visualisasi interaktif  
+- Menciptakan pengalaman belajar yang lebih menarik  
+- Mengintegrasikan teknologi dalam pendidikan  
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+MANFAAT
+- Mempermudah pemahaman konsep kompleks  
+- Meningkatkan minat belajar  
+- Mendukung pembelajaran mandiri  
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+SUBTEMA
+Inovasi Teknologi dalam Pendidikan (Edutech)
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+NODIFY adalah langkah menuju pembelajaran yang lebih interaktif, visual, dan bermakna.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-# nodify-cga
+## Link Website
+https://nodifyapp.vercel.app/

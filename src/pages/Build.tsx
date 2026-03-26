@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
+import { TouchBackend } from "react-dnd-touch-backend";
 import {
   Sun, Droplet, Wind, Zap, CircleDot,
   Play, RotateCcw, CheckCircle, XCircle, AlertCircle,
@@ -15,80 +15,158 @@ import { MonitorSmartphone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MobileBlocker — blocks screens smaller than 1366px (laptop+)
+// MobileBlocker — now only blocks small phones (< 480px width)
+// Tablets and laptops are allowed through
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function MobileBlocker() {
-  const [isMobile, setIsMobile] = useState(false);
+  const [blockState, setBlockState] = useState<"none" | "phone" | "portrait">("none");
   const navigate = useNavigate();
-
+ 
   useEffect(() => {
     const check = () => {
-      const width = window.innerWidth;
+      const width  = window.innerWidth;
       const height = window.innerHeight;
-      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+ 
+      // Block tiny phones outright (all orientation)
+      if (width < 480) {
+        setBlockState("phone");
+        return;
+      }
 
-      // Block if: touch device AND screen smaller than laptop size
-      const shouldBlock = isTouchDevice && (width < 1200 || height < 800);
-      setIsMobile(shouldBlock);
+      // Block small landscape-mode screens where the short side is less than 480
+      if (isTouchDevice && width > height && height < 480) {
+        setBlockState("phone");
+        return;
+      }
+
+      // On touch devices (tablets/phones that passed the width check),
+      // force landscape — portrait means height > width
+      if (isTouchDevice && height > width) {
+        setBlockState("portrait");
+        return;
+      }
+ 
+      setBlockState("none");
     };
-
+ 
     check();
     window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
+    // orientationchange fires on iOS before resize sometimes
+    window.addEventListener("orientationchange", () => setTimeout(check, 100));
+    return () => {
+      window.removeEventListener("resize", check);
+      window.removeEventListener("orientationchange", check);
+    };
   }, []);
-
+ 
   return (
     <AnimatePresence>
-      {isMobile && (
+      {blockState !== "none" && (
         <motion.div
+          key={blockState}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-[999] flex items-center justify-center p-6 backdrop-blur-md"
-          style={{ background: "rgba(0,0,0,0.75)" }}
+          transition={{ duration: 0.25 }}
+          className="fixed inset-0 z-[999] flex items-center justify-center p-6"
+          style={{ background: "rgba(0,0,0,0.82)", backdropFilter: "blur(12px)" }}
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.92 }}
-            transition={{ duration: 0.35, ease: "easeOut" }}
-            className="w-full max-w-md rounded-2xl p-8 shadow-2xl text-center"
+            initial={{ opacity: 0, scale: 0.92, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: 12 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="w-full max-w-sm rounded-3xl p-8 shadow-2xl text-center"
             style={{ background: "var(--card)", border: "1px solid var(--border)" }}
           >
-            <div className="flex items-center justify-center mb-5">
-              <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg"
-                style={{ background: "linear-gradient(135deg, var(--primary), var(--secondary))" }}
-              >
-                <MonitorSmartphone className="w-8 h-8 text-white" />
-              </div>
-            </div>
-            <div className="text-3xl mb-4">💻</div>
-            <h2 className="text-xl font-bold mb-3 leading-snug" style={{ color: "var(--foreground)" }}>
-              Best experienced on larger screens
-            </h2>
-            <p className="text-sm leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
-              Nodify's build system works best on laptop or desktop computers. Please try accessing from a device with a larger screen.
-            </p>
-            <div
-              className="mt-6 px-4 py-3 rounded-xl text-xs font-medium"
-              style={{
-                background: "color-mix(in srgb, var(--primary) 10%, transparent)",
-                border: "1px solid color-mix(in srgb, var(--primary) 25%, transparent)",
-                color: "var(--primary)",
-              }}
-            >
-              Requires screen width ≥1200px and height ≥800px
-            </div>
-            <button
-              onClick={() => navigate("/")}
-              className="mt-6 w-full py-3 rounded-xl font-semibold transition-all"
-              style={{ background: "var(--primary)", color: "white" }}
-            >
-              ← Go Back Home
-            </button>
+            {blockState === "portrait" ? (
+              <>
+                {/* Animated rotate icon */}
+                <div className="flex items-center justify-center mb-6">
+                  <motion.div
+                    animate={{ rotate: [0, 90, 90, 0] }}
+                    transition={{ duration: 2.2, repeat: Infinity, repeatDelay: 1, ease: "easeInOut" }}
+                    style={{
+                      width: 64, height: 64, borderRadius: 16,
+                      background: "linear-gradient(135deg, var(--primary), var(--secondary))",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    {/* Tablet silhouette SVG */}
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                      <rect x="6" y="3" width="20" height="26" rx="3" stroke="white" strokeWidth="2" fill="none"/>
+                      <circle cx="16" cy="25" r="1.5" fill="white"/>
+                      <rect x="12" y="6" width="8" height="1.5" rx="0.75" fill="white"/>
+                    </svg>
+                  </motion.div>
+                </div>
+ 
+                {/* Rotating arrow arc */}
+                <div className="flex items-center justify-center mb-5">
+                  <motion.div
+                    animate={{ rotate: [0, 360] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                    style={{ width: 48, height: 48 }}
+                  >
+                    <svg width="48" height="48" viewBox="0 0 48 48">
+                      <path
+                        d="M 24 8 A 16 16 0 1 1 8 24"
+                        stroke="var(--primary)" strokeWidth="3" fill="none"
+                        strokeLinecap="round"
+                        strokeDasharray="60 20"
+                      />
+                      <polygon points="8,24 4,18 14,17" fill="var(--primary)" />
+                    </svg>
+                  </motion.div>
+                </div>
+ 
+                <h2 className="text-xl font-bold mb-3" style={{ color: "var(--foreground)" }}>
+                  Rotate your device
+                </h2>
+                <p className="text-sm leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+                  Nodify's build canvas needs landscape mode to maximize functionality. Please rotate your device horizontally.
+                </p>
+                <div
+                  className="mt-5 px-4 py-2.5 rounded-xl text-xs font-semibold"
+                  style={{
+                    background: "color-mix(in srgb, var(--primary) 12%, transparent)",
+                    border: "1px solid color-mix(in srgb, var(--primary) 30%, transparent)",
+                    color: "var(--primary)",
+                  }}
+                >
+                  Landscape mode required
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-center mb-5">
+                  <div
+                    className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg"
+                    style={{ background: "linear-gradient(135deg, var(--primary), var(--secondary))" }}
+                  >
+                    <MonitorSmartphone className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+                <div className="text-3xl mb-4">📱</div>
+                <h2 className="text-xl font-bold mb-3 leading-snug" style={{ color: "var(--foreground)" }}>
+                  Nodes need more space
+                </h2>
+                <p className="text-sm leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+                  Nodify is built around interactive nodes that thrive with more space. On larger screens, 
+                  everything connects more fluidly and feels more immersive. 
+                  For the full experience, use a tablet, laptop, or desktop.
+                </p>
+                <button
+                  onClick={() => navigate("/")}
+                  className="mt-6 w-full py-3 rounded-xl font-semibold transition-all"
+                  style={{ background: "var(--primary)", color: "white" }}
+                >
+                  ← Go Back Home
+                </button>
+              </>
+            )}
           </motion.div>
         </motion.div>
       )}
@@ -234,41 +312,17 @@ function hasCycleInGraph(nodes: PlacedNode[], connections: Connection[]): boolea
   return found;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// NEW VALIDATION SYSTEM
-// ─────────────────────────────────────────────────────────────────────────────
-// Return format for ALL validators: { score: number, errors: string[] }
-// Score rules:
-//   - Start at 100
-//   - Deduct points for mistakes
-//   - Minimum score = 0
-//
-// Deductions:
-//   Missing node:           -10
-//   Missing connection:     -10
-//   Wrong direction:        -10
-//   Indirect connection:    -5
-//   Missing required cycle: -20
-//   Invalid cycle:          -20
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Validators ───────────────────────────────────────────────────────────────
 
 interface ValidatorResult {
   score: number;
   errors: string[];
 }
 
-// ── Validator: Water Cycle ────────────────────────────────────────────────────
-// Nodes: water, sunlight, evaporation, water-vapor, condensation, cloud, rain
-// Connections: water→evaporation, sunlight→evaporation, evaporation→water-vapor,
-//   water-vapor→condensation, condensation→cloud, cloud→rain, rain→water
-// Rule: Must form a closed loop
-
 function validateWaterCycle(placedNodes: PlacedNode[], connections: Connection[]): ValidatorResult {
   let score = 100;
   const errors: string[] = [];
-
   const requiredNodeIds = ["water", "sunlight", "evaporation", "water-vapor", "condensation", "cloud", "rain"];
-
   const requiredEdges = [
     { from: "water",        to: "evaporation",  label: "Connect water → evaporation" },
     { from: "sunlight",     to: "evaporation",  label: "Connect sunlight → evaporation" },
@@ -278,63 +332,33 @@ function validateWaterCycle(placedNodes: PlacedNode[], connections: Connection[]
     { from: "cloud",        to: "rain",          label: "Connect cloud → rain" },
     { from: "rain",         to: "water",         label: "Connect rain → water" },
   ];
-
-  // Check missing nodes — -10 each
   for (const nodeId of requiredNodeIds) {
-    if (!getNode(placedNodes, nodeId)) {
-      score -= 10;
-      errors.push(`Add the missing node: ${nodeId.replace(/-/g, " ")}`);
-    }
+    if (!getNode(placedNodes, nodeId)) { score -= 10; errors.push(`Add the missing node: ${nodeId.replace(/-/g, " ")}`); }
   }
-
-  // Check connections — only when both endpoint nodes are present
   for (const edge of requiredEdges) {
     const fromNode = getNode(placedNodes, edge.from);
     const toNode   = getNode(placedNodes, edge.to);
     if (!fromNode || !toNode) continue;
-
     if (edgeExists(fromNode.id, toNode.id, connections)) {
-      // Direct connection — OK, no deduction
     } else if (edgeExists(toNode.id, fromNode.id, connections)) {
-      // Wrong direction — -10
-      score -= 10;
-      errors.push(`Wrong direction — ${edge.label}`);
+      score -= 10; errors.push(`Wrong direction — ${edge.label}`);
     } else if (pathExists(fromNode.id, toNode.id, connections)) {
-      // Indirect connection — -5
-      score -= 5;
-      errors.push(`Indirect connection — ${edge.label}`);
+      score -= 5; errors.push(`Indirect connection — ${edge.label}`);
     } else {
-      // Missing connection — -10
-      score -= 10;
-      errors.push(edge.label);
+      score -= 10; errors.push(edge.label);
     }
   }
-
-  // Check closed loop — -20 if missing
   const coreNodes = placedNodes.filter(n => requiredNodeIds.includes(n.component.id));
   if (coreNodes.length === requiredNodeIds.length && !hasCycleInGraph(coreNodes, connections)) {
-    score -= 20;
-    errors.push("This should form a loop — connect rain back to water to close the cycle");
+    score -= 20; errors.push("This should form a loop — connect rain back to water to close the cycle");
   }
-
   return { score: Math.max(0, score), errors };
 }
-
-// ── Validator: Climate Change ─────────────────────────────────────────────────
-// Nodes: sunlight, greenhouse-gases, heat-trapping, temperature-rise, ice-melting, rising-sea-level
-// Connections: sunlight→heat-trapping, greenhouse-gases→heat-trapping,
-//   heat-trapping→temperature-rise, temperature-rise→ice-melting, ice-melting→rising-sea-level
-// Rules: No cycles allowed; rising-sea-level has no outgoing edges
 
 function validateClimateChange(placedNodes: PlacedNode[], connections: Connection[]): ValidatorResult {
   let score = 100;
   const errors: string[] = [];
-
-  const requiredNodeIds = [
-    "sunlight", "greenhouse-gases", "heat-trapping",
-    "temperature-rise", "ice-melting", "rising-sea-level",
-  ];
-
+  const requiredNodeIds = ["sunlight", "greenhouse-gases", "heat-trapping", "temperature-rise", "ice-melting", "rising-sea-level"];
   const requiredEdges = [
     { from: "sunlight",         to: "heat-trapping",    label: "Connect sunlight → heat trapping" },
     { from: "greenhouse-gases", to: "heat-trapping",    label: "Connect greenhouse gases → heat trapping" },
@@ -342,70 +366,38 @@ function validateClimateChange(placedNodes: PlacedNode[], connections: Connectio
     { from: "temperature-rise", to: "ice-melting",      label: "Connect temperature rise → ice melting" },
     { from: "ice-melting",      to: "rising-sea-level", label: "Connect ice melting → rising sea level" },
   ];
-
-  // Check missing nodes — -10 each
   for (const nodeId of requiredNodeIds) {
-    if (!getNode(placedNodes, nodeId)) {
-      score -= 10;
-      errors.push(`Add the missing node: ${nodeId.replace(/-/g, " ")}`);
-    }
+    if (!getNode(placedNodes, nodeId)) { score -= 10; errors.push(`Add the missing node: ${nodeId.replace(/-/g, " ")}`); }
   }
-
-  // Check connections — only when both endpoint nodes are present
   for (const edge of requiredEdges) {
     const fromNode = getNode(placedNodes, edge.from);
     const toNode   = getNode(placedNodes, edge.to);
     if (!fromNode || !toNode) continue;
-
     if (edgeExists(fromNode.id, toNode.id, connections)) {
-      // Direct connection — OK, no deduction
     } else if (edgeExists(toNode.id, fromNode.id, connections)) {
-      // Wrong direction — -10
-      score -= 10;
-      errors.push(`Wrong direction — ${edge.label}`);
+      score -= 10; errors.push(`Wrong direction — ${edge.label}`);
     } else if (pathExists(fromNode.id, toNode.id, connections)) {
-      // Indirect connection — -5
-      score -= 5;
-      errors.push(`Indirect connection — ${edge.label}`);
+      score -= 5; errors.push(`Indirect connection — ${edge.label}`);
     } else {
-      // Missing connection — -10
-      score -= 10;
-      errors.push(edge.label);
+      score -= 10; errors.push(edge.label);
     }
   }
-
-  // Invalid cycle (not allowed in linear chain) — -20
   const coreNodes = placedNodes.filter(n => requiredNodeIds.includes(n.component.id));
   if (hasCycleInGraph(coreNodes, connections)) {
-    score -= 20;
-    errors.push("Invalid cycle — climate change is a one-way process, remove any loops");
+    score -= 20; errors.push("Invalid cycle — climate change is a one-way process, remove any loops");
   }
-
-  // rising-sea-level must have no outgoing edges — -10 if it does
   const seaNode = getNode(placedNodes, "rising-sea-level");
   if (seaNode) {
     const outgoing = connections.filter(c => c.from === seaNode.id);
-    if (outgoing.length > 0) {
-      score -= 10;
-      errors.push("This output should not connect forward — rising sea level is the final step");
-    }
+    if (outgoing.length > 0) { score -= 10; errors.push("This output should not connect forward — rising sea level is the final step"); }
   }
-
   return { score: Math.max(0, score), errors };
 }
-
-// ── Validator: Electric Circuit ───────────────────────────────────────────────
-// Nodes: battery, wire, switch, current-flow, light-bulb
-// Connections: battery→wire, wire→switch, switch→current-flow,
-//   current-flow→light-bulb, light-bulb→battery
-// Rule: Must form a closed loop
 
 function validateElectricCircuit(placedNodes: PlacedNode[], connections: Connection[]): ValidatorResult {
   let score = 100;
   const errors: string[] = [];
-
   const requiredNodeIds = ["battery", "wire", "switch", "current-flow", "light-bulb"];
-
   const requiredEdges = [
     { from: "battery",       to: "wire",          label: "Connect battery → wire" },
     { from: "wire",          to: "switch",         label: "Connect wire → switch" },
@@ -413,45 +405,26 @@ function validateElectricCircuit(placedNodes: PlacedNode[], connections: Connect
     { from: "current-flow",  to: "light-bulb",     label: "Connect current flow → light bulb" },
     { from: "light-bulb",    to: "battery",        label: "Connect light bulb → battery" },
   ];
-
-  // Check missing nodes — -10 each
   for (const nodeId of requiredNodeIds) {
-    if (!getNode(placedNodes, nodeId)) {
-      score -= 10;
-      errors.push(`Add the missing node: ${nodeId.replace(/-/g, " ")}`);
-    }
+    if (!getNode(placedNodes, nodeId)) { score -= 10; errors.push(`Add the missing node: ${nodeId.replace(/-/g, " ")}`); }
   }
-
-  // Check connections — only when both endpoint nodes are present
   for (const edge of requiredEdges) {
     const fromNode = getNode(placedNodes, edge.from);
     const toNode   = getNode(placedNodes, edge.to);
     if (!fromNode || !toNode) continue;
-
     if (edgeExists(fromNode.id, toNode.id, connections)) {
-      // Direct connection — OK, no deduction
     } else if (edgeExists(toNode.id, fromNode.id, connections)) {
-      // Wrong direction — -10
-      score -= 10;
-      errors.push(`Wrong direction — ${edge.label}`);
+      score -= 10; errors.push(`Wrong direction — ${edge.label}`);
     } else if (pathExists(fromNode.id, toNode.id, connections)) {
-      // Indirect connection — -5
-      score -= 5;
-      errors.push(`Indirect connection — ${edge.label}`);
+      score -= 5; errors.push(`Indirect connection — ${edge.label}`);
     } else {
-      // Missing connection — -10
-      score -= 10;
-      errors.push(edge.label);
+      score -= 10; errors.push(edge.label);
     }
   }
-
-  // Check closed loop — -20 if missing
   const coreNodes = placedNodes.filter(n => requiredNodeIds.includes(n.component.id));
   if (coreNodes.length === requiredNodeIds.length && !hasCycleInGraph(coreNodes, connections)) {
-    score -= 20;
-    errors.push("This should form a loop — connect light bulb back to battery to close the circuit");
+    score -= 20; errors.push("This should form a loop — connect light bulb back to battery to close the circuit");
   }
-
   return { score: Math.max(0, score), errors };
 }
 
@@ -473,12 +446,7 @@ export function accLabel(a: number): string {
   return "Missing Steps";
 }
 
-function calcEfficiency(
-  placedCount: number,
-  connCount: number,
-  attemptCount: number,
-  cfg: EfficiencyConfig,
-): number {
+function calcEfficiency(placedCount: number, connCount: number, attemptCount: number, cfg: EfficiencyConfig): number {
   const extraNodes = Math.max(0, placedCount - cfg.optimalNodes);
   const extraConns = Math.max(0, connCount - cfg.optimalConnections);
   const raw = 100 - extraNodes * cfg.extraNodePenalty - extraConns * cfg.extraConnPenalty - attemptCount * cfg.attemptPenalty;
@@ -492,12 +460,7 @@ function safeScore(accuracy: number, efficiency: number) {
   };
 }
 
-function computeEfficiencyScore(
-  nodes: PlacedNode[],
-  connections: Connection[],
-  attemptCount: number,
-  efficiencyConfig: EfficiencyConfig,
-): number {
+function computeEfficiencyScore(nodes: PlacedNode[], connections: Connection[], attemptCount: number, efficiencyConfig: EfficiencyConfig): number {
   const usedNodeIds = new Set(connections.flatMap((c) => [c.from, c.to]));
   const unusedNodes = nodes.filter((n) => !usedNodeIds.has(n.id) && !n.component._isDistractor).length;
   const extraConns  = Math.max(0, connections.length - Math.max(0, nodes.length - 1));
@@ -535,28 +498,17 @@ function shuffleArray<T>(arr: T[]): T[] {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CONCEPT DATA
+// CONCEPT DATA (unchanged)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const CONCEPTS: ConceptLevel[] = [
-  // ══════════════════════════════════════════════════════════════════════════
-  // CONCEPT 1 — WATER CYCLE (EASY) — CLOSED LOOP
-  // Required: water, sunlight, evaporation, water-vapor, condensation, cloud, rain
-  // Perfect: all 7 nodes + all 7 edges forming a closed loop = score 100
-  // ══════════════════════════════════════════════════════════════════════════
   {
     id: "water-cycle",
     name: "Water Cycle",
     difficulty: "Easy",
     description: "Build a closed loop — water must return to where it started",
     goal: "Connect water through evaporation, condensation, clouds, and rain back to water",
-    efficiencyConfig: {
-      optimalNodes: 7,
-      optimalConnections: 7,
-      extraNodePenalty: 8,
-      extraConnPenalty: 4,
-      attemptPenalty: 5,
-    },
+    efficiencyConfig: { optimalNodes: 7, optimalConnections: 7, extraNodePenalty: 8, extraConnPenalty: 4, attemptPenalty: 5 },
     requiredNodeTypes: [
       { type: "input",   label: "Input",        count: "≥ 1" },
       { type: "energy",  label: "Energy Source", count: "= 1" },
@@ -564,7 +516,6 @@ const CONCEPTS: ConceptLevel[] = [
       { type: "output",  label: "Output",        count: "≥ 1" },
     ],
     components: [
-      // ── Core nodes (7 required) ──────────────────────────────────────────
       { id: "water",        name: "Water",        icon: Droplet,    type: "input",   gradient: "from-blue-400 to-cyan-500" },
       { id: "sunlight",     name: "Sunlight",     icon: Sun,        type: "energy",  gradient: "from-amber-400 to-orange-500" },
       { id: "evaporation",  name: "Evaporation",  icon: TrendingUp, type: "process", gradient: "from-purple-400 to-violet-500" },
@@ -572,7 +523,6 @@ const CONCEPTS: ConceptLevel[] = [
       { id: "condensation", name: "Condensation", icon: Cloud,      type: "process", gradient: "from-indigo-400 to-blue-500" },
       { id: "cloud",        name: "Cloud",        icon: Cloud,      type: "process", gradient: "from-slate-300 to-gray-400" },
       { id: "rain",         name: "Rain",         icon: CloudRain,  type: "output",  gradient: "from-emerald-400 to-green-500" },
-      // ── Distractor nodes ─────────────────────────────────────────────────
       { id: "heat",              name: "Heat",              icon: Flame,         type: "process", gradient: "from-orange-400 to-red-500",    _isDistractor: true },
       { id: "wind",              name: "Wind",              icon: Wind,          type: "process", gradient: "from-teal-400 to-cyan-500",     _isDistractor: true },
       { id: "ground-absorption", name: "Ground Absorption", icon: TreeDeciduous, type: "process", gradient: "from-emerald-500 to-green-400", _isDistractor: true },
@@ -581,44 +531,20 @@ const CONCEPTS: ConceptLevel[] = [
       validateSystem: (placedNodes, connections, attemptCount, efficiencyConfig) => {
         const result = validateWaterCycle(placedNodes, connections);
         const hasMissingNode = result.errors.some(e => e.startsWith("Add the missing node"));
-        const state: ValidationState =
-          hasMissingNode ? "incomplete" :
-          result.errors.length > 0 ? (result.score >= 60 ? "partial" : "error") :
-          "success";
+        const state: ValidationState = hasMissingNode ? "incomplete" : result.errors.length > 0 ? (result.score >= 60 ? "partial" : "error") : "success";
         const efficiency = computeEfficiencyScore(placedNodes, connections, attemptCount, efficiencyConfig);
         const safe = safeScore(result.score, efficiency);
-        return {
-          isValid: result.errors.length === 0 && result.score >= 100,
-          message: result.errors.length === 0 ? "System fully valid" : result.errors[0],
-          state,
-          errorType: result.errors.length > 1 ? `${result.errors.length} issues found` : "",
-          hint: result.errors[0] || "",
-          score: { accuracy: safe.accuracy, efficiency: safe.efficiency },
-          errors: result.errors,
-          warnings: [],
-        };
+        return { isValid: result.errors.length === 0 && result.score >= 100, message: result.errors.length === 0 ? "System fully valid" : result.errors[0], state, errorType: result.errors.length > 1 ? `${result.errors.length} issues found` : "", hint: result.errors[0] || "", score: { accuracy: safe.accuracy, efficiency: safe.efficiency }, errors: result.errors, warnings: [] };
       },
     },
   },
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // CONCEPT 2 — CLIMATE CHANGE (MEDIUM) — LINEAR ONLY
-  // Required: sunlight, greenhouse-gases, heat-trapping, temperature-rise, ice-melting, rising-sea-level
-  // Perfect: all 6 nodes + 5 edges, no cycle, rising-sea-level terminal = score 100
-  // ══════════════════════════════════════════════════════════════════════════
   {
     id: "climate-change",
     name: "Climate Change",
     difficulty: "Medium",
     description: "Build a linear chain — no cycles, one direction only",
     goal: "Show how greenhouse gases lead to rising sea levels step by step",
-    efficiencyConfig: {
-      optimalNodes: 6,
-      optimalConnections: 5,
-      extraNodePenalty: 12,
-      extraConnPenalty: 6,
-      attemptPenalty: 8,
-    },
+    efficiencyConfig: { optimalNodes: 6, optimalConnections: 5, extraNodePenalty: 12, extraConnPenalty: 6, attemptPenalty: 8 },
     requiredNodeTypes: [
       { type: "energy",  label: "Energy Source", count: "= 1" },
       { type: "input",   label: "Input",         count: "≥ 1" },
@@ -626,14 +552,12 @@ const CONCEPTS: ConceptLevel[] = [
       { type: "output",  label: "Output",        count: "≥ 1" },
     ],
     components: [
-      // ── Core nodes (6 required) ──────────────────────────────────────────
       { id: "sunlight",          name: "Sunlight",          icon: Sun,         type: "energy",  gradient: "from-amber-400 to-orange-500" },
       { id: "greenhouse-gases",  name: "Greenhouse Gases",  icon: Wind,        type: "input",   gradient: "from-gray-400 to-slate-500" },
       { id: "heat-trapping",     name: "Heat Trapping",     icon: Flame,       type: "process", gradient: "from-red-400 to-orange-500" },
       { id: "temperature-rise",  name: "Temperature Rise",  icon: TrendingUp,  type: "process", gradient: "from-orange-400 to-red-500" },
       { id: "ice-melting",       name: "Ice Melting",       icon: Snowflake,   type: "process", gradient: "from-blue-300 to-cyan-400" },
       { id: "rising-sea-level",  name: "Rising Sea Level",  icon: Waves,       type: "output",  gradient: "from-blue-500 to-indigo-600" },
-      // ── Distractor nodes ─────────────────────────────────────────────────
       { id: "heat-absorption",   name: "Heat Absorption",   icon: Thermometer, type: "process", gradient: "from-orange-300 to-amber-400", _isDistractor: true },
       { id: "ozone-depletion",   name: "Ozone Depletion",   icon: Shield,      type: "process", gradient: "from-teal-400 to-emerald-500", _isDistractor: true },
       { id: "deforestation",     name: "Deforestation",     icon: TreeDeciduous,type:"input",   gradient: "from-emerald-400 to-green-500",_isDistractor: true },
@@ -643,44 +567,20 @@ const CONCEPTS: ConceptLevel[] = [
       validateSystem: (placedNodes, connections, attemptCount, efficiencyConfig) => {
         const result = validateClimateChange(placedNodes, connections);
         const hasMissingNode = result.errors.some(e => e.startsWith("Add the missing node"));
-        const state: ValidationState =
-          hasMissingNode ? "incomplete" :
-          result.errors.length > 0 ? (result.score >= 60 ? "partial" : "error") :
-          "success";
+        const state: ValidationState = hasMissingNode ? "incomplete" : result.errors.length > 0 ? (result.score >= 60 ? "partial" : "error") : "success";
         const efficiency = computeEfficiencyScore(placedNodes, connections, attemptCount, efficiencyConfig);
         const safe = safeScore(result.score, efficiency);
-        return {
-          isValid: result.errors.length === 0 && result.score >= 100,
-          message: result.errors.length === 0 ? "System fully valid" : result.errors[0],
-          state,
-          errorType: result.errors.length > 1 ? `${result.errors.length} issues found` : "",
-          hint: result.errors[0] || "",
-          score: { accuracy: safe.accuracy, efficiency: safe.efficiency },
-          errors: result.errors,
-          warnings: [],
-        };
+        return { isValid: result.errors.length === 0 && result.score >= 100, message: result.errors.length === 0 ? "System fully valid" : result.errors[0], state, errorType: result.errors.length > 1 ? `${result.errors.length} issues found` : "", hint: result.errors[0] || "", score: { accuracy: safe.accuracy, efficiency: safe.efficiency }, errors: result.errors, warnings: [] };
       },
     },
   },
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // CONCEPT 3 — ELECTRIC CIRCUIT (HARD) — CLOSED LOOP
-  // Required: battery, wire, switch, current-flow, light-bulb
-  // Perfect: all 5 nodes + all 5 edges forming a closed loop = score 100
-  // ══════════════════════════════════════════════════════════════════════════
   {
     id: "electric-circuit",
     name: "Electric Circuit",
     difficulty: "Hard",
     description: "Build a closed loop — electricity must complete a full circuit",
     goal: "Connect battery through wire, switch, current flow, and light bulb back to battery",
-    efficiencyConfig: {
-      optimalNodes: 5,
-      optimalConnections: 5,
-      extraNodePenalty: 15,
-      extraConnPenalty: 8,
-      attemptPenalty: 12,
-    },
+    efficiencyConfig: { optimalNodes: 5, optimalConnections: 5, extraNodePenalty: 15, extraConnPenalty: 8, attemptPenalty: 12 },
     requiredNodeTypes: [
       { type: "energy",    label: "Energy Source", count: "= 1" },
       { type: "input",     label: "Conductor",     count: "≥ 1" },
@@ -689,13 +589,11 @@ const CONCEPTS: ConceptLevel[] = [
       { type: "output",    label: "Output",        count: "= 1" },
     ],
     components: [
-      // ── Core nodes (5 required) ──────────────────────────────────────────
       { id: "battery",       name: "Battery",       icon: Battery,   type: "energy",    gradient: "from-amber-400 to-yellow-500" },
       { id: "wire",          name: "Wire",          icon: Cable,     type: "input",     gradient: "from-blue-400 to-cyan-500" },
       { id: "switch",        name: "Switch",        icon: Power,     type: "condition", gradient: "from-teal-400 to-emerald-500" },
       { id: "current-flow",  name: "Current Flow",  icon: Zap,       type: "process",   gradient: "from-purple-400 to-violet-500" },
       { id: "light-bulb",    name: "Light Bulb",    icon: Lightbulb, type: "output",    gradient: "from-yellow-300 to-amber-400" },
-      // ── Distractor nodes ─────────────────────────────────────────────────
       { id: "closed-circuit", name: "Closed Circuit", icon: CircleDot, type: "process",  gradient: "from-violet-400 to-purple-500", _isDistractor: true },
       { id: "energy-transfer",name: "Energy Transfer",icon: Sparkles,  type: "process",  gradient: "from-amber-300 to-orange-400", _isDistractor: true },
       { id: "resistor",       name: "Resistor",       icon: Shield,    type: "process",  gradient: "from-orange-400 to-red-500",   _isDistractor: true },
@@ -706,22 +604,10 @@ const CONCEPTS: ConceptLevel[] = [
       validateSystem: (placedNodes, connections, attemptCount, efficiencyConfig) => {
         const result = validateElectricCircuit(placedNodes, connections);
         const hasMissingNode = result.errors.some(e => e.startsWith("Add the missing node"));
-        const state: ValidationState =
-          hasMissingNode ? "incomplete" :
-          result.errors.length > 0 ? (result.score >= 60 ? "partial" : "error") :
-          "success";
+        const state: ValidationState = hasMissingNode ? "incomplete" : result.errors.length > 0 ? (result.score >= 60 ? "partial" : "error") : "success";
         const efficiency = computeEfficiencyScore(placedNodes, connections, attemptCount, efficiencyConfig);
         const safe = safeScore(result.score, efficiency);
-        return {
-          isValid: result.errors.length === 0 && result.score >= 100,
-          message: result.errors.length === 0 ? "System fully valid" : result.errors[0],
-          state,
-          errorType: result.errors.length > 1 ? `${result.errors.length} issues found` : "",
-          hint: result.errors[0] || "",
-          score: { accuracy: safe.accuracy, efficiency: safe.efficiency },
-          errors: result.errors,
-          warnings: [],
-        };
+        return { isValid: result.errors.length === 0 && result.score >= 100, message: result.errors.length === 0 ? "System fully valid" : result.errors[0], state, errorType: result.errors.length > 1 ? `${result.errors.length} issues found` : "", hint: result.errors[0] || "", score: { accuracy: safe.accuracy, efficiency: safe.efficiency }, errors: result.errors, warnings: [] };
       },
     },
   },
@@ -849,6 +735,8 @@ const themeStyles = `
   }
   .nodify-canvas {
     background-color: var(--background);
+    /* Allow touch scrolling on canvas when not dragging */
+    touch-action: none;
   }
   .nodify-muted { color: var(--muted-foreground); }
 
@@ -857,6 +745,11 @@ const themeStyles = `
     border: 1px solid var(--border);
     border-radius: var(--radius);
     transition: background-color 0.15s, border-color 0.15s;
+    /* Ensure minimum touch target size */
+    min-height: 56px;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
   }
   .nodify-component-item:hover {
     background-color: var(--card);
@@ -867,6 +760,11 @@ const themeStyles = `
     background-color: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
+    /* Larger touch target for nodes */
+    min-width: 140px;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
   }
   .nodify-node-card.selected {
     border-color: var(--primary);
@@ -908,6 +806,7 @@ const themeStyles = `
     border: none;
     border-radius: var(--radius);
     transition: filter 0.15s;
+    min-height: 44px;
   }
   .nodify-run-btn:hover:not(:disabled) { filter: brightness(1.1); }
   .nodify-run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -918,6 +817,7 @@ const themeStyles = `
     border: 1px solid var(--border);
     border-radius: var(--radius);
     transition: background-color 0.15s, color 0.15s;
+    min-height: 44px;
   }
   .nodify-secondary-btn:hover { background-color: var(--card); color: var(--foreground); }
 
@@ -929,7 +829,60 @@ const themeStyles = `
   .nodify-connect-label { color: var(--primary); }
   .nodify-section-label { color: var(--muted-foreground); letter-spacing: 0.1em; font-size: 0.65rem; text-transform: uppercase; font-weight: 600; }
   .nodify-duplicate-warn { background-color: color-mix(in srgb, var(--warning) 12%, transparent); border: 1px solid color-mix(in srgb, var(--warning) 40%, transparent); border-radius: var(--radius); }
+
+  /* ── Touch drag preview ── */
+  .nodify-drag-preview {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.85;
+    transform: scale(1.05);
+    transition: none;
+  }
+
+  /* ── Touch-mode: tap to move indicator ── */
+  .nodify-move-mode {
+    border: 2px solid var(--primary) !important;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 20%, transparent) !important;
+  }
+
+  /* ── Tablet layout adjustments ── */
+  @media (max-width: 1024px) {
+    .nodify-sidebar-left {
+      width: 14rem !important;
+    }
+    .nodify-sidebar-right {
+      width: 16rem !important;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .nodify-sidebar-left {
+      width: 12rem !important;
+    }
+    .nodify-sidebar-right {
+      width: 13rem !important;
+    }
+  }
+
+  /* Prevent text selection during drag on all interactive elements */
+  .nodify-app * {
+    -webkit-tap-highlight-color: transparent;
+  }
 `;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Touch-aware DnD backend options
+// enableMouseEvents: true  → mouse still works on desktop/hybrid
+// enableKeyboardEvents: false → avoid accidental keyboard triggers
+// delayTouchStart: 50      → small delay to distinguish tap (connect) from drag
+// ─────────────────────────────────────────────────────────────────────────────
+const touchBackendOptions = {
+  enableMouseEvents: true,      // keep mouse drag working on desktops
+  enableKeyboardEvents: false,
+  delayTouchStart: 80,          // ms — wait before treating touch as drag (not tap)
+  touchSlop: 8,                 // px movement before drag activates
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ScoreRing
@@ -964,7 +917,8 @@ export function Build() {
     <>
       <MobileBlocker />
       <style>{themeStyles}</style>
-      <DndProvider backend={HTML5Backend}>
+      {/* TouchBackend with enableMouseEvents keeps desktop working too */}
+      <DndProvider backend={TouchBackend} options={touchBackendOptions}>
         <BuildContent />
       </DndProvider>
     </>
@@ -997,9 +951,10 @@ function BuildContent() {
   >([]);
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
 
+  // ── Touch move-mode: tap a placed node to enter "move mode", then tap canvas to reposition ──
+  const [movingNodeId, setMovingNodeId] = useState<string | null>(null);
+
   const canvasRef = useRef<HTMLDivElement>(null);
-  const [isDraggingNode, setIsDraggingNode] = useState(false);
-  const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
 
   const addNode = useCallback((component: Component, x: number, y: number) => {
     setPlacedNodes(prev => {
@@ -1026,37 +981,70 @@ function BuildContent() {
     collect: monitor => ({ isOver: monitor.isOver() }),
   }), [addNode]);
 
+  // Also accept placed-node drops for repositioning via DnD
+  const [, dropCanvas] = useDrop(() => ({
+    accept: "placed-node",
+    drop: (item: { nodeId: string }, monitor) => {
+      const offset = monitor.getClientOffset();
+      if (offset && canvasRef.current) {
+        const rect = canvasRef.current.getBoundingClientRect();
+        const x = offset.x - rect.left - 70;
+        const y = offset.y - rect.top - 28;
+        setPlacedNodes(prev =>
+          prev.map(n => n.id === item.nodeId ? { ...n, x, y } : n)
+        );
+      }
+    },
+  }), []);
+
+  // Attach both drop refs to the canvas
   useEffect(() => {
-    const onDown = (e: MouseEvent) => { if (e.button === 2) setIsDraggingNode(true); };
-    const onUp   = (e: MouseEvent) => { if (e.button === 2) { setIsDraggingNode(false); setDraggedNodeId(null); } };
-    const onCtx  = (e: MouseEvent) => e.preventDefault();
-    window.addEventListener("mousedown", onDown);
-    window.addEventListener("mouseup", onUp);
-    window.addEventListener("contextmenu", onCtx);
-    return () => {
-      window.removeEventListener("mousedown", onDown);
-      window.removeEventListener("mouseup", onUp);
-      window.removeEventListener("contextmenu", onCtx);
-    };
-  }, []);
-
-  const handleNodeMouseDown = (nodeId: string, e: React.MouseEvent) => {
-    if (e.button === 2) setDraggedNodeId(nodeId);
-  };
-
-  const handleCanvasMouseMove = (e: React.MouseEvent) => {
-    if (isDraggingNode && draggedNodeId && canvasRef.current) {
-      const rect = canvasRef.current.getBoundingClientRect();
-      setPlacedNodes(prev =>
-        prev.map(n => n.id === draggedNodeId
-          ? { ...n, x: e.clientX - rect.left - 70, y: e.clientY - rect.top - 28 }
-          : n
-        )
-      );
+    if (canvasRef.current && viewMode === "canvas") {
+      drop(canvasRef);
+      dropCanvas(canvasRef);
     }
+  }, [drop, dropCanvas, viewMode]);
+
+  // ── Canvas tap handler — moves node in move-mode, or clears selection ──
+  const handleCanvasTap = (e: React.MouseEvent | React.TouchEvent) => {
+    if (movingNodeId) {
+      // Place the moving node at the tapped position
+      let clientX: number, clientY: number;
+      if ("touches" in e) {
+        const touch = (e as React.TouchEvent).changedTouches[0];
+        clientX = touch.clientX; clientY = touch.clientY;
+      } else {
+        clientX = (e as React.MouseEvent).clientX;
+        clientY = (e as React.MouseEvent).clientY;
+      }
+      if (canvasRef.current) {
+        const rect = canvasRef.current.getBoundingClientRect();
+        setPlacedNodes(prev =>
+          prev.map(n => n.id === movingNodeId
+            ? { ...n, x: clientX - rect.left - 70, y: clientY - rect.top - 28 }
+            : n
+          )
+        );
+      }
+      setMovingNodeId(null);
+      return;
+    }
+    setSelectedNode(null);
   };
 
-  const handleNodeClick = (nodeId: string) => {
+  const handleNodeClick = (nodeId: string, e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+
+    // If this node is already in move-mode, cancel move-mode
+    if (movingNodeId === nodeId) {
+      setMovingNodeId(null);
+      return;
+    }
+
+    // If another node is in move-mode, ignore node taps (let canvas tap handle placement)
+    if (movingNodeId) return;
+
+    // Normal connect logic
     if (selectedNode === null) {
       setSelectedNode(nodeId);
     } else if (selectedNode === nodeId) {
@@ -1075,10 +1063,28 @@ function BuildContent() {
     setConnections(prev => prev.filter(c => c.from !== nodeId && c.to !== nodeId));
   };
 
+  // ── Long-press to enter move-mode (touch UX) ──
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleNodeTouchStart = (nodeId: string) => {
+    longPressTimer.current = setTimeout(() => {
+      setMovingNodeId(nodeId);
+      setSelectedNode(null);
+    }, 500); // 500ms long-press
+  };
+
+  const handleNodeTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
   const deleteNode = (nodeId: string) => {
     setPlacedNodes(prev => prev.filter(n => n.id !== nodeId));
     setConnections(prev => prev.filter(c => c.from !== nodeId && c.to !== nodeId));
     if (selectedNode === nodeId) setSelectedNode(null);
+    if (movingNodeId === nodeId) setMovingNodeId(null);
   };
 
   const validateSystem = () => {
@@ -1107,13 +1113,7 @@ function BuildContent() {
         if (result.hint || result.errorType || result.message) {
           setFailedAttemptLog(prev => [
             ...prev,
-            {
-              attempt: newCount,
-              hint: result.hint || "",
-              errorType: result.errorType || "Error",
-              message: result.message,
-              accuracy: clampedScore.accuracy,
-            },
+            { attempt: newCount, hint: result.hint || "", errorType: result.errorType || "Error", message: result.message, accuracy: clampedScore.accuracy },
           ]);
         }
       }
@@ -1125,7 +1125,7 @@ function BuildContent() {
   };
 
   const resetCanvas = () => {
-    setPlacedNodes([]); setConnections([]); setSelectedNode(null);
+    setPlacedNodes([]); setConnections([]); setSelectedNode(null); setMovingNodeId(null);
     setSystemStatus("idle"); setValidationMessage(""); setErrorType("");
     setCurrentHint(""); setScore({ accuracy: 0, efficiency: 0 }); setValidationWarnings([]);
     setIsRunning(false); setDuplicateWarning(null);
@@ -1141,7 +1141,7 @@ function BuildContent() {
 
   const backToSelector = () => {
     setViewMode("selector"); setSelectedLevel(null); setShuffledComponents([]);
-    setPlacedNodes([]); setConnections([]); setSelectedNode(null);
+    setPlacedNodes([]); setConnections([]); setSelectedNode(null); setMovingNodeId(null);
     setSystemStatus("idle"); setValidationMessage(""); setErrorType("");
     setCurrentHint(""); setPreviousHints([]); setScore({ accuracy: 0, efficiency: 0 });
     setIsRunning(false); setAttemptCount(0); setFailedAttemptLog([]); setDuplicateWarning(null);
@@ -1157,10 +1157,6 @@ function BuildContent() {
     const mx = (x1 + x2) / 2, my = (y1 + y2) / 2 - 50;
     return `M ${x1} ${y1} Q ${mx} ${my} ${x2} ${y2}`;
   };
-
-  useEffect(() => {
-    if (canvasRef.current && viewMode === "canvas") drop(canvasRef);
-  }, [drop, viewMode]);
 
   // ════════════════════════════════════════════════════════════════════════════
   // SELECTOR
@@ -1330,7 +1326,7 @@ function BuildContent() {
 
         {/* ── Left Sidebar ── */}
         <motion.div initial={{ x: -300 }} animate={{ x: 0 }} transition={{ duration: 0.4 }}
-          className={`nodify-sidebar flex flex-col shadow-2xl ${ds.card}`}
+          className={`nodify-sidebar nodify-sidebar-left flex flex-col shadow-2xl ${ds.card}`}
           style={{ width: "18rem", flexShrink: 0, borderRight: "1px solid var(--sidebar-border)" }}>
 
           <div className="p-5" style={{ borderBottom: "1px solid var(--sidebar-border)" }}>
@@ -1352,10 +1348,11 @@ function BuildContent() {
           <div className="nodify-instructions p-4">
             <p className="font-semibold text-xs mb-2" style={{ color: "var(--muted-foreground)" }}>How to build:</p>
             <div className="space-y-1 text-xs nodify-muted leading-relaxed">
-              <p>• Drag components to canvas</p>
-              <p>• Click nodes to connect them</p>
-              <p>• Double-click to disconnect</p>
-              <p>• Right-click + drag to move</p>
+              <p>• Drag or tap nodes onto canvas</p>
+              <p>• Tap a node, then tap another to connect</p>
+              <p>• Double-tap to disconnect all edges</p>
+              <p>• Long-press (0.5s) to reposition a node</p>
+              <p>• Drag node to trash zone to delete</p>
               <p>• Run system to validate</p>
             </div>
           </div>
@@ -1384,17 +1381,30 @@ function BuildContent() {
             </div>
           </div>
 
+          {/* Move-mode banner */}
+          <AnimatePresence>
+            {movingNodeId && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                className="px-4 py-2 text-xs font-semibold text-center"
+                style={{ background: "color-mix(in srgb, var(--primary) 15%, transparent)", color: "var(--primary)", borderBottom: "1px solid color-mix(in srgb, var(--primary) 30%, transparent)" }}
+              >
+                Move mode — tap anywhere on the canvas to place the node, or tap the node again to cancel
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Drop zone */}
           <div
             ref={canvasRef}
             className="flex-1 relative overflow-hidden nodify-canvas"
-            onMouseMove={handleCanvasMouseMove}
-            onClick={() => setSelectedNode(null)}
+            onClick={handleCanvasTap}
             style={{
               backgroundImage: isOver
                 ? "radial-gradient(circle, color-mix(in srgb, var(--primary) 18%, transparent) 2px, transparent 2px)"
                 : "radial-gradient(circle, color-mix(in srgb, var(--foreground) 6%, transparent) 1.5px, transparent 1.5px)",
               backgroundSize: "30px 30px",
+              cursor: movingNodeId ? "crosshair" : "default",
             }}
           >
             {/* SVG connections */}
@@ -1456,9 +1466,11 @@ function BuildContent() {
                   key={node.id}
                   node={node}
                   isSelected={selectedNode === node.id}
-                  onSelect={() => handleNodeClick(node.id)}
+                  isMoving={movingNodeId === node.id}
+                  onTap={(e) => handleNodeClick(node.id, e)}
                   onDoubleClick={() => handleNodeDoubleClick(node.id)}
-                  onMouseDown={(e) => handleNodeMouseDown(node.id, e)}
+                  onTouchStart={() => handleNodeTouchStart(node.id)}
+                  onTouchEnd={handleNodeTouchEnd}
                   systemStatus={systemStatus}
                 />
               ))}
@@ -1472,7 +1484,7 @@ function BuildContent() {
                   <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 2.5, repeat: Infinity }}>
                     <Zap className="w-16 h-16 mx-auto mb-4 opacity-40" />
                   </motion.div>
-                  <p className="text-lg font-medium">Drop components here to start building</p>
+                  <p className="text-lg font-medium">Drag or tap components here to start</p>
                   <p className="text-sm mt-1 opacity-60">Your system awaits…</p>
                 </div>
               </div>
@@ -1510,7 +1522,7 @@ function BuildContent() {
 
         {/* ── Right Panel ── */}
         <motion.div initial={{ x: 300 }} animate={{ x: 0 }} transition={{ duration: 0.4 }}
-          className="nodify-sidebar flex flex-col shadow-2xl"
+          className="nodify-sidebar nodify-sidebar-right flex flex-col shadow-2xl"
           style={{ width: "20rem", flexShrink: 0, borderLeft: "1px solid var(--sidebar-border)" }}>
 
           <div className="p-5" style={{ borderBottom: "1px solid var(--sidebar-border)" }}>
@@ -1561,7 +1573,7 @@ function BuildContent() {
               </div>
             </motion.div>
 
-            {/* Score — ring + bars */}
+            {/* Score */}
             {systemStatus !== "idle" && (
               <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
                 className="nodify-score-panel p-4">
@@ -1593,13 +1605,13 @@ function BuildContent() {
                 ))}
                 {attemptCount > 0 && (
                   <p className="text-xs nodify-muted mt-2">
-                    {attemptCount} failed attempt{attemptCount > 1 ? "s" : ""} — efficiency −{Math.min(100, attemptCount * selectedLevel.efficiencyConfig.attemptPenalty)}% (persists after reset)
+                    {attemptCount} failed attempt{attemptCount > 1 ? "s" : ""} — efficiency −{Math.min(100, attemptCount * selectedLevel.efficiencyConfig.attemptPenalty)}%
                   </p>
                 )}
               </motion.div>
             )}
 
-            {/* Duplicate node warning */}
+            {/* Duplicate warning */}
             <AnimatePresence>
               {duplicateWarning && (
                 <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
@@ -1649,7 +1661,7 @@ function BuildContent() {
               </motion.div>
             )}
 
-            {/* Progress + Failed attempt history */}
+            {/* Progress */}
             <div className="nodify-progress-panel p-4">
               <h3 className="nodify-section-label mb-3">Progress</h3>
               <div className="space-y-2 text-sm mb-3">
@@ -1676,10 +1688,7 @@ function BuildContent() {
                       return (
                         <motion.div key={num} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
                           className="rounded-lg p-2.5"
-                          style={{
-                            background: "color-mix(in srgb, var(--destructive) 8%, transparent)",
-                            border: "1px solid color-mix(in srgb, var(--destructive) 22%, transparent)",
-                          }}>
+                          style={{ background: "color-mix(in srgb, var(--destructive) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--destructive) 22%, transparent)" }}>
                           <div className="flex items-center justify-between mb-1">
                             <span className="text-xs font-bold" style={{ color: "var(--destructive)" }}>Attempt #{num}</span>
                             <div className="flex items-center gap-2">
@@ -1709,7 +1718,7 @@ function BuildContent() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DraggableComponent — no "distractor" label shown; all nodes look identical
+// DraggableComponent — touch + mouse drag from sidebar
 // ─────────────────────────────────────────────────────────────────────────────
 
 function DraggableComponent({ component }: { component: Component }) {
@@ -1727,7 +1736,8 @@ function DraggableComponent({ component }: { component: Component }) {
       ref={(node) => { drag(node as unknown as Element | null); }}
       whileHover={{ scale: 1.04, y: -2 }}
       whileTap={{ scale: 0.97 }}
-      className={`nodify-component-item p-3 cursor-move ${isDragging ? "opacity-40 scale-95" : ""}`}
+      className={`nodify-component-item p-3 cursor-grab active:cursor-grabbing ${isDragging ? "opacity-40 scale-95" : ""}`}
+      style={{ touchAction: "none" }}
     >
       <div className="flex items-center gap-3">
         <div
@@ -1746,27 +1756,46 @@ function DraggableComponent({ component }: { component: Component }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PlacedNodeComponent
+// PlacedNodeComponent — touch-aware
 // ─────────────────────────────────────────────────────────────────────────────
 
 function PlacedNodeComponent({
-  node, isSelected, onSelect, onDoubleClick, onMouseDown, systemStatus,
+  node, isSelected, isMoving, onTap, onDoubleClick, onTouchStart, onTouchEnd, systemStatus,
 }: {
   node: PlacedNode;
   isSelected: boolean;
-  onSelect: (id: string) => void;
+  isMoving: boolean;
+  onTap: (e: React.MouseEvent | React.TouchEvent) => void;
   onDoubleClick: () => void;
-  onMouseDown: (e: React.MouseEvent) => void;
+  onTouchStart: () => void;
+  onTouchEnd: () => void;
   systemStatus: string;
 }) {
   const Icon = node.component.icon;
   const [c1, c2] = gradientColors(node.component.gradient);
 
+  // DnD drag — still used for trash-zone deletion via drag
   const [{ isDragging }, drag] = useDrag(() => ({
     type: "placed-node",
     item: { nodeId: node.id },
     collect: monitor => ({ isDragging: monitor.isDragging() }),
   }), [node.id]);
+
+  const lastTap = useRef<number>(0);
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    onTouchEnd();
+    const now = Date.now();
+    if (now - lastTap.current < 300) {
+      // Double-tap
+      e.preventDefault();
+      onDoubleClick();
+      lastTap.current = 0;
+    } else {
+      lastTap.current = now;
+      // Single tap handled by onClick
+    }
+  };
 
   return (
     <motion.div
@@ -1776,13 +1805,20 @@ function PlacedNodeComponent({
       exit={{ scale: 0, rotate: 90 }}
       transition={{ scale: { duration: 0.2 }, rotate: { duration: 0.2 }, left: { duration: 0 }, top: { duration: 0 } }}
       className={`absolute cursor-pointer ${isDragging ? "opacity-40" : ""}`}
-      style={{ left: node.x, top: node.y, zIndex: isSelected ? 5 : 2 }}
-      onClick={(e: React.MouseEvent) => { e.stopPropagation(); onSelect(node.id); }}
-      onDoubleClick={(e: React.MouseEvent) => { e.stopPropagation(); onDoubleClick(); }}
-      onMouseDown={onMouseDown}
+      style={{ left: node.x, top: node.y, zIndex: isSelected || isMoving ? 5 : 2, touchAction: "none" }}
+      onClick={onTap}
+      onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick(); }}
+      onTouchStart={(e) => { e.stopPropagation(); onTouchStart(); }}
+      onTouchEnd={(e) => { e.stopPropagation(); handleTouchEnd(e); }}
       whileHover={{ scale: 1.06 }}
+      whileTap={{ scale: 0.96 }}
     >
-      <div className={`nodify-node-card p-4 shadow-2xl ${isSelected ? "selected" : ""} ${systemStatus === "success" ? "success" : ""} ${(systemStatus === "incomplete" || systemStatus === "partial") ? "error" : ""}`}>
+      <div className={`nodify-node-card p-4 shadow-2xl
+        ${isSelected ? "selected" : ""}
+        ${isMoving  ? "nodify-move-mode" : ""}
+        ${systemStatus === "success" ? "success" : ""}
+        ${(systemStatus === "incomplete" || systemStatus === "partial") ? "error" : ""}
+      `}>
         <div className="flex items-center gap-2.5">
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg flex-shrink-0"
@@ -1808,7 +1844,15 @@ function PlacedNodeComponent({
         {isSelected && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs whitespace-nowrap font-medium nodify-connect-label">
-            click another to connect
+            tap another to connect
+          </motion.div>
+        )}
+
+        {isMoving && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs whitespace-nowrap font-medium"
+            style={{ color: "var(--primary)" }}>
+            tap canvas to place
           </motion.div>
         )}
       </div>
@@ -1817,7 +1861,7 @@ function PlacedNodeComponent({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TrashZone
+// TrashZone — accepts dragged placed-nodes for deletion
 // ─────────────────────────────────────────────────────────────────────────────
 
 function TrashZone({ onDelete }: { onDelete: (nodeId: string) => void }) {
