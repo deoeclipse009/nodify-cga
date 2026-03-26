@@ -64,8 +64,9 @@ export function Contact() {
       setFormData({ form_name: "", form_email: "", form_message: "" });
 
       setTimeout(() => setSubmitted(false), 3000);
-    } catch (error: any) {
-      console.error("EmailJS Error:", error);
+    } catch (err: unknown) {
+      console.error("EmailJS Error:", err);
+      const error = err as { text?: string; message?: string };
       const errorMessage = error?.text || error?.message || "Failed to send message. Please try again.";
       setError(errorMessage);
     } finally {

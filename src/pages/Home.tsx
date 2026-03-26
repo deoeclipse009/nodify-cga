@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Lightbulb, Play, Target, Zap, Brain, Rocket, Star } from "lucide-react";
+import { ArrowRight, Lightbulb, Target, Zap, Brain, Rocket, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useEffect} from "react";
 
@@ -8,7 +8,7 @@ function TypewriterText({ text }: { text: string }) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    let timeout: NodeJS.Timeout;
+    let timeout: number;
 
     if (!isDeleting && displayed.length < text.length) {
       // typing
@@ -24,8 +24,8 @@ function TypewriterText({ text }: { text: string }) {
         setDisplayed(text.slice(0, displayed.length - 1));
       }, 25);
     } else if (isDeleting && displayed.length === 0) {
-      // restart
-      setIsDeleting(false);
+      // restart (avoid sync state update inside effect)
+      timeout = setTimeout(() => setIsDeleting(false), 0);
     }
 
     return () => clearTimeout(timeout);

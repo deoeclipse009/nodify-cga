@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import {
@@ -7,7 +7,8 @@ import {
   Sparkles, Battery, Lightbulb, Cable, Power, Flame,
   Cloud, CloudRain, Snowflake, TreeDeciduous,
   Waves, TrendingUp, Thermometer, Shield,
-  Recycle, Mountain, Layers, ArrowLeft, Trash2, Target, ChevronRight
+  Mountain, Layers, ArrowLeft, Trash2, Target, ChevronRight,
+  type LucideIcon,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MonitorSmartphone } from "lucide-react";
@@ -22,7 +23,16 @@ export function MobileBlocker() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 1366);
+    const check = () => {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+      // Block if: touch device AND screen smaller than laptop size
+      const shouldBlock = isTouchDevice && (width < 1200 || height < 800);
+      setIsMobile(shouldBlock);
+    };
+
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
@@ -57,10 +67,10 @@ export function MobileBlocker() {
             </div>
             <div className="text-3xl mb-4">💻</div>
             <h2 className="text-xl font-bold mb-3 leading-snug" style={{ color: "var(--foreground)" }}>
-              Best experienced on a bigger screen
+              Best experienced on larger screens
             </h2>
             <p className="text-sm leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
-              Nodify's build system works best on laptop. Tablet and mobile support is currently under development.
+              Nodify's build system works best on laptop or desktop computers. Please try accessing from a device with a larger screen.
             </p>
             <div
               className="mt-6 px-4 py-3 rounded-xl text-xs font-medium"
@@ -70,7 +80,7 @@ export function MobileBlocker() {
                 color: "var(--primary)",
               }}
             >
-              Try opening Nodify on a laptop/PC/Macbook or widen your browser window for the full experience
+              Requires screen width ≥1200px and height ≥800px
             </div>
             <button
               onClick={() => navigate("/")}
@@ -93,7 +103,7 @@ type NodeType = "input" | "process" | "output" | "energy" | "condition";
 interface Component {
   id: string;
   name: string;
-  icon: any;
+  icon: LucideIcon;
   type: NodeType;
   gradient: string;
   _isDistractor?: boolean;
@@ -104,6 +114,22 @@ interface PlacedNode {
   component: Component;
   x: number;
   y: number;
+}
+
+interface ReviewProcess {
+  title: string;
+  desc: string;
+}
+
+interface ReviewContent {
+  emoji: string;
+  difficulty: string;
+  title: string;
+  mainIdea: string;
+  coreLogic: string[];
+  processes: ReviewProcess[];
+  focus: string[];
+  goal: string;
 }
 
 interface Connection {
@@ -703,7 +729,7 @@ const CONCEPTS: ConceptLevel[] = [
 
 // ─── Review content ───────────────────────────────────────────────────────────
 
-const reviewContent: Record<string, any> = {
+const reviewContent: Record<string, ReviewContent> = {
   "water-cycle": {
     emoji: "💧", difficulty: "EASY", title: "WATER CYCLE",
     mainIdea: "Water continuously moves through Earth — it evaporates, rises, condenses into clouds, and falls as rain, completing a cycle.",
@@ -975,6 +1001,19 @@ function BuildContent() {
   const [isDraggingNode, setIsDraggingNode] = useState(false);
   const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
 
+  const addNode = useCallback((component: Component, x: number, y: number) => {
+    setPlacedNodes(prev => {
+      const alreadyPlaced = prev.some(n => n.component.id === component.id);
+      if (alreadyPlaced) {
+        setDuplicateWarning(`"${component.name}" is already on the canvas. Remove it if it's unneeded.`);
+        setTimeout(() => setDuplicateWarning(null), 3000);
+        return prev;
+      }
+      setDuplicateWarning(null);
+      return [...prev, { id: `${component.id}-${Date.now()}`, component, x, y }];
+    });
+  }, []);
+
   const [{ isOver }, drop] = useDrop(() => ({
     accept: "component",
     drop: (item: { component: Component }, monitor) => {
@@ -985,7 +1024,7 @@ function BuildContent() {
       }
     },
     collect: monitor => ({ isOver: monitor.isOver() }),
-  }), []);
+  }), [addNode]);
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => { if (e.button === 2) setIsDraggingNode(true); };
@@ -1015,17 +1054,6 @@ function BuildContent() {
         )
       );
     }
-  };
-
-  const addNode = (component: Component, x: number, y: number) => {
-    const alreadyPlaced = placedNodes.some(n => n.component.id === component.id);
-    if (alreadyPlaced) {
-      setDuplicateWarning(`"${component.name}" is already on the canvas. Remove it if it's unneeded.`);
-      setTimeout(() => setDuplicateWarning(null), 3000);
-    } else {
-      setDuplicateWarning(null);
-    }
-    setPlacedNodes(prev => [...prev, { id: `${component.id}-${Date.now()}`, component, x, y }]);
   };
 
   const handleNodeClick = (nodeId: string) => {
@@ -1242,7 +1270,7 @@ function BuildContent() {
                   <span>⚙️</span> Process Breakdown
                 </h2>
                 <div className="space-y-2">
-                  {review.processes.map((p: any, i: number) => (
+                  {review.processes.map((p: ReviewProcess, i: number) => (
                     <div key={i} className="nodify-review-process-item px-4 py-3">
                       <p className="font-semibold mb-0.5" style={{ color: "var(--card-foreground)" }}>{p.title}</p>
                       <p className="nodify-muted whitespace-pre-line">{p.desc}</p>
@@ -1302,7 +1330,7 @@ function BuildContent() {
 
         {/* ── Left Sidebar ── */}
         <motion.div initial={{ x: -300 }} animate={{ x: 0 }} transition={{ duration: 0.4 }}
-          className="nodify-sidebar flex flex-col shadow-2xl"
+          className={`nodify-sidebar flex flex-col shadow-2xl ${ds.card}`}
           style={{ width: "18rem", flexShrink: 0, borderRight: "1px solid var(--sidebar-border)" }}>
 
           <div className="p-5" style={{ borderBottom: "1px solid var(--sidebar-border)" }}>
@@ -1413,10 +1441,10 @@ function BuildContent() {
                 return (
                   <motion.circle key={`particle-${conn.from}-${conn.to}`} r="4"
                     filter="url(#nodify-glow)"
-                    initial={{ offsetDistance: "0%" } as any}
-                    animate={{ offsetDistance: "100%" } as any}
+                    initial={{ offsetDistance: "0%" } as unknown as { offsetDistance: string }}
+                    animate={{ offsetDistance: "100%" } as unknown as { offsetDistance: string }}
                     transition={{ duration: 1.8, repeat: Infinity, ease: "linear" }}
-                    style={{ offsetPath: `path('${d}')`, fill: "var(--success)" } as any}
+                    style={{ offsetPath: `path('${d}')`, fill: "var(--success)" } as React.CSSProperties}
                   />
                 );
               })}
@@ -1696,7 +1724,7 @@ function DraggableComponent({ component }: { component: Component }) {
 
   return (
     <motion.div
-      ref={drag as any}
+      ref={(node) => { drag(node as unknown as Element | null); }}
       whileHover={{ scale: 1.04, y: -2 }}
       whileTap={{ scale: 0.97 }}
       className={`nodify-component-item p-3 cursor-move ${isDragging ? "opacity-40 scale-95" : ""}`}
@@ -1742,7 +1770,7 @@ function PlacedNodeComponent({
 
   return (
     <motion.div
-      ref={drag as any}
+      ref={(node) => { drag(node as unknown as Element | null); }}
       initial={{ scale: 0, rotate: -90 }}
       animate={{ scale: 1, rotate: 0, left: node.x, top: node.y }}
       exit={{ scale: 0, rotate: 90 }}
@@ -1801,7 +1829,7 @@ function TrashZone({ onDelete }: { onDelete: (nodeId: string) => void }) {
 
   return (
     <motion.div
-      ref={drop as any}
+      ref={(node) => { drop(node as unknown as Element | null); }}
       initial={{ scale: 0.9, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ delay: 0.3 }}
